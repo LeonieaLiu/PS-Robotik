@@ -1,0 +1,26 @@
+image_width: 640
+image_height: 480
+camera_name: 'mono_cam'
+camera_matrix:
+  rows: 3
+  cols: 3
+  data: [ 308.236835,    0.     ,  324.713647,
+            0.     ,  308.248416,  253.712894,
+            0.     ,    0.     ,    1.     ]
+distortion_model: plumb_bob
+distortion_coefficients:
+  rows: 1
+  cols: 5
+  data: [-0.260036 , 0.043551, -0.002132, 0.001917, 0.000000]
+rectification_matrix:
+  rows: 3
+  cols: 3
+  data: [ 1.,  0.,  0.,
+          0.,  1.,  0.,
+          0.,  0.,  1.]
+projection_matrix:
+  rows: 3
+  cols: 4
+  data: [ 210.637735,    0.     ,  326.220185,   0.     ,
+            0.     ,  242.853910,  260.718370,    0.     ,
+            0.     ,    0.     ,    1.     ,    0.     ]
