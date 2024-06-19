@@ -1,0 +1,45 @@
+ekf_se_node:
+  frequency: 30  # EKF频率为30Hz
+  sensor_timeout: 0.1  # 传感器超时设置为0.1秒
+  two_d_mode: false  # 如果是仅平面运动，设置为true
+  map_frame: "map"  # 全局地图坐标系
+  odom_frame: "odom"  # 里程计坐标系
+  base_link_frame: "base_link"  # 机器人基座坐标系
+  world_frame: "odom"  # 用作世界坐标系的坐标系
+
+  odom0: "/imu/data_raw"  # 第一个里程计源（IMU）
+  odom0_config:
+    - false
+    - false
+    - false
+    - false
+    - false
+    - false
+    - true
+    - true
+    - true
+    - true
+    - true
+    - true
+    - true
+    - true
+    - true
+  odom0_frame_id: "imu_sensor"
+
+  odom1: "/tf"  # 第二个里程计源（来自摄像头的TF消息）
+  odom1_config:
+    - true
+    - true
+    - false
+    - false
+    - false
+    - false
+    - false
+    - false
+    - false
+    - true
+    - true
+    - true
+  odom1_frame_id: "mono_cam"
+  odom1_child_frame_id: "world"
+
