@@ -1,4 +1,4 @@
-import maze_grid as maze
+import catkin_ws.src.maze_grid as maze
 import time
 import rospy
 from motor.msg import MotorPWM
