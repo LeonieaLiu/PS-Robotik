@@ -16,5 +16,4 @@ if __name__ == '__main__':
     angle_sub = rospy.Subscriber('/jetbot_angle', Float32, angle_callback, queue_size=1)
     matrix_sub = rospy.Subscriber('/adjusted_matrix', Float64MultiArray, matrix_callback, queue_size=1)
     rospy.spin()
-    #include
     
