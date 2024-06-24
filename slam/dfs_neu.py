@@ -147,12 +147,12 @@ class DFS:
         print("Scanning at the starting point (0,0)")
         self.rotate_and_scan()
 
-        # 向前走一步到 (1,0)
+        # 向前走一步到 (0,1)
         path = self.search()
         for node in path:
             print(f"Moving to: ({node.x}, {node.z})")
-            if (node.z, node.x) == (1, 0):
-                print("Reached (1,0), scanning left and right")
+            if (node.x, node.z) == (0, 1):
+                print("Reached (0,1), scanning left and right")
                 ret, frame = self.cap.read()
                 if not ret:
                     break
