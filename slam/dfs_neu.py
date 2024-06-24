@@ -101,7 +101,7 @@ class DFS:
             next_ = curr + add
             if next_ in self.close_set or next_ in self.open_list:
                 continue
-            if self.maze.grid[next_.y, next_.x] == 0:  # 墙壁
+            if self.maze.grid[next_.z, next_.x] == 0:  # 墙壁
                 continue
             self.open_list.append(next_)
     
@@ -110,7 +110,7 @@ class DFS:
             curr = self.open_list.pop()
             self._update_open_list(curr)
             self.close_set.add(curr)
-            self.maze.add_to_path(curr.x, curr.y)
+            self.maze.add_to_path(curr.x, curr.z)
             self.detect_apriltag()
             if curr == self.start:
                 break
@@ -151,7 +151,7 @@ class DFS:
         path = self.search()
         for node in path:
             print(f"Moving to: ({node.x}, {node.z})")
-            if (node.x, node.z) == (1, 0):
+            if (node.z, node.x) == (1, 0):
                 print("Reached (1,0), scanning left and right")
                 ret, frame = self.cap.read()
                 if not ret:
