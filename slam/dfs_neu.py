@@ -2,8 +2,8 @@
 #从YAML文件中读取墙壁信息
 import yaml
 
-def load_maze_from_yaml(file_path):#读取给定的yaml文件
-    with open(file_path, 'r') as file:
+def load_maze_from_yaml(download/tags.yaml):#读取给定的yaml文件
+    with open(download/tags.yaml, 'r') as file:
         maze_data = yaml.safe_load(file)
     walls = maze_data['walls']
     return walls
