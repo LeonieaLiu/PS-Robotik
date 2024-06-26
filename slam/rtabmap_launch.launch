@@ -1,0 +1,25 @@
+<launch>
+    <!-- Launch IMU publisher -->
+    <node pkg="your_package_name" type="imu_publisher.py" name="imu_publisher" output="screen"/>
+
+    <!-- Launch Camera publisher -->
+    <node pkg="your_package_name" type="camera_publisher.py" name="camera_publisher" output="screen"/>
+
+    <!-- Launch RTAB-Map -->
+    <node pkg="rtabmap_ros" type="rtabmap" name="rtabmap" output="screen">
+        <param name="subscribe_depth" type="bool" value="false"/>
+        <param name="subscribe_rgb" type="bool" value="true"/>
+        <param name="subscribe_scan" type="bool" value="false"/>
+        <param name="subscribe_scan_cloud" type="bool" value="false"/>
+        <param name="subscribe_stereo" type="bool" value="false"/>
+        <param name="frame_id" type="string" value="base_link"/>
+        <param name="odom_frame_id" type="string" value="odom"/>
+        <param name="config_path" type="string" value=""/>
+    </node>
+
+    <!-- Launch RTAB-Map visualizer -->
+    <node pkg="rtabmap_ros" type="rtabmapviz" name="rtabmapviz" output="screen">
+        <param name="frame_id" type="string" value="base_link"/>
+        <param name="odom_frame_id" type="string" value="odom"/>
+    </node>
+</launch>
