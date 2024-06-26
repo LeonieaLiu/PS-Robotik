@@ -1,12 +1,12 @@
 #!/usr/bin/env python
-
+import std_msgas.msg import Float64MultiArray
 import rospy
 import yaml # 用于处理YAML文件
 from apriltag_ros.msg import AprilTagDetectionArray # 用于接收AprilTag检测结果的消息类型
 
 class AprilTagSaver:
     def __init__(self):
-        self.original_yaml_file = '/path/to/original_tags.yaml'  # 原始YAML文件路径
+        self.original_yaml_file = '/home/jetson/workspace/catkin_ws/config/apriltag/tags.yaml'  # 原始YAML文件路径
         self.updated_yaml_file = '/path/to/updated_tags.yaml'  # 更新后的YAML文件路径
         self.tag_info = self.load_existing_tags()  # 加载已有的Tag信息
 

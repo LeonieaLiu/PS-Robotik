@@ -45,15 +45,15 @@ def generate_map_from_tags(filename):#生成地图
 def main():
     rospy.init_node('tf_data_subscriber_node')
     tags_file = "tags.yaml"  # 现有的tags信息文件
-    output_file = "scanned_tags.txt"  # 扫描到的tags存储文件
-    subscriber = TFDataSubscriber(tags_file, output_file)
+    output_file = TFDataSubscriber(tags_file)
+    output_file.save_tag()
 
     
     # 保持节点运行
     rospy.spin()
 
     # 生成地图
-    generate_map_from_tags(filename)
+    
 
 if __name__ == "__main__":
     main()
