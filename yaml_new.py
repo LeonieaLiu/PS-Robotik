@@ -7,7 +7,7 @@ from apriltag_ros.msg import AprilTagDetectionArray # 用于接收AprilTag检测
 class AprilTagSaver:
     def __init__(self):
         self.original_yaml_file = '/home/jetson/workspace/catkin_ws/config/apriltag/tags.yaml'  # 原始YAML文件路径
-        self.updated_yaml_file = '/path/to/updated_tags.yaml'  # 更新后的YAML文件路径
+        self.updated_yaml_file = '/Downloads/tags.yaml'  # 更新后的YAML文件路径
         self.tag_info = self.load_existing_tags()  # 加载已有的Tag信息
 
         rospy.init_node('apriltag_saver', anonymous=True)  # 初始化ROS节点
