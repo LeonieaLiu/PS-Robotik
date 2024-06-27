@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import std_msgas.msg import Float64MultiArray
+from std_msgs.msg import Float64MultiArray
 import rospy
 import yaml # 用于处理YAML文件
 from apriltag_ros.msg import AprilTagDetectionArray # 用于接收AprilTag检测结果的消息类型
