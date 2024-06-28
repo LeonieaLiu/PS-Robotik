@@ -1,5 +1,5 @@
 import rospy
-from apriltag_ros.msg import AprilTagDetectionArray
+#from apriltag_data import AprilTagDetectionArray
 from std_msgs.msg import Float64MultiArray
 import os
 
@@ -8,7 +8,7 @@ class AprilTagRecorder:
     def __init__(self, output_file):
         self.output_file = '/Downloads/tags.yaml'
         self.observed_tags = set()# 用于存储已经观察到的Tag ID
-        self.sub = rospy.Subscriber("/apriltag_tag", AprilTagDetectionArray, self.callback)
+        self.sub = rospy.Subscriber('apriltag_data', Float64MultiArray, self.callback)
         if os.path.exists(self.output_file):
             os.remove(self.output_file)
 
