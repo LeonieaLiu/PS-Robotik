@@ -27,30 +27,21 @@ class Maze_Listener:
     def update_position(self):
         try:
             # 等待直到变换可用
-            self.listener.waitForTransform('/maze', '/mono_cam', rospy.Time(0), rospy.Duration(9.0))
+            self.listener.waitForTransform('/maze', '/mono_cam', rospy.Time(0), rospy.Duration(1.0))
             (trans, rot) = self.listener.lookupTransform('/maze', '/mono_cam', rospy.Time(0))
+            self.jetbot_world_position = [trans[0], trans[1], trans[2]]
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
             rospy.loginfo("TF transform not available")
             return
             # 定义Jetbot坐标系原点在Jetbot坐标系中的位置
-        jetbot_origin = PointStamped()
-        jetbot_origin.header.frame_id = "mono_cam"
-        jetbot_origin.header.stamp = rospy.Time(0)
-        jetbot_origin.point.x = 0.0
-        jetbot_origin.point.y = 0.0
-        jetbot_origin.point.z = 0.0
-
-        # 使用变换将Jetbot坐标系原点转换到世界坐标系
-        world_point = self.listener.transformPoint("maze", jetbot_origin)
-        self.jetbot_world_position = (world_point.point.x, world_point.point.y, world_point.point.z)
         rospy.loginfo("Jetbot origin in world frame: (%.2f, %.2f, %.2f)" %
-                      (world_point.point.x, world_point.point.y, world_point.point.z))
+                      (trans[0], trans[1], trans[2]))
 
     def process_data(self,transform):
         rospy.loginfo("Processing Maze Message")
-        translation = transform.transform.translation
+        #translation = transform.transform.translation
         rotation = transform.transform.rotation
-        x,y,z= translation.x,translation.y,translation.z
+        #x,y,z= translation.x,translation.y,translation.z
         qx,qy,qz,qw=rotation.x,rotation.y,rotation.z, rotation.w
         quat= R.from_quat([qx,qy,qz,qw])
         Rotationmatrix = quat.as_matrix()
@@ -63,9 +54,6 @@ class Maze_Listener:
         if cross_product[2] > 0:
             angle_rad=-angle_rad
         theta_degree = np.degrees(angle_rad)
-        #maze_x=np.abs(np.sin(np.abs(theta_degree))*np.abs(z)-np.cos(np.abs(theta_degree))*np.abs(x))
-        #maze_y=np.abs(np.sin(np.abs(theta_degree))*np.abs(x)+np.cos(np.abs(theta_degree))*np.abs(z))
-        #rospy.loginfo(f"Publishing tf_data: position=({maze_x}, {maze_y}), degree={theta_degree}")
         maze_msg = Float64MultiArray()
         maze_msg.data = [theta_degree, self.jetbot_world_position[0], self.jetbot_world_position[1],\
                          self.jetbot_world_position[2]]
@@ -99,9 +87,9 @@ class TagDataHandler:
                 # 从jetbot z轴到apriltag z轴方向 顺时针为正 与世界坐标系判断相同
                 theta_degree = np.degrees(angle_rad)
                 distance=np.sqrt(x**2+z**2)
-                if abs(theta_degree) < 30:
-                    rospy.loginfo(f"Processing tag data:id=({transform.child_frame_id}) position=({x},{z}),distance=({distance}) ,theta_degree=({theta_degree})")
-                    number = transform.child_frame_id.replace('tag_','')
+                if abs(theta_degree) < 20:
+                    number = transform.child_frame_id.replace('tag_', '')
+                    rospy.loginfo(f"Processing tag data:id=({number}), distance=({distance}), theta_degree=({theta_degree})")
                     tag_id = float(number)
                     tag_msg=Float64MultiArray()
                     tag_msg.data = [tag_id,distance,theta_degree]
@@ -110,5 +98,5 @@ class TagDataHandler:
 if __name__ == '__main__':
     rospy.init_node('tf_listener_node')
     maze_listener=Maze_Listener()
-    #tag_listener=TagDataHandler()
+    tag_listener=TagDataHandler()
     rospy.spin()
