@@ -19,8 +19,8 @@ class demand_publisher:
         self.rate.sleep()
 
     def forward(self):
-        self.msg_pwmcmd.pwm_left = -0.3
-        self.msg_pwmcmd.pwm_right = -0.3
+        self.msg_pwmcmd.pwm_left = -0.26
+        self.msg_pwmcmd.pwm_right = -0.26
         self.pub_pwmcmd.publish(self.msg_pwmcmd)
         self.rate.sleep()
         
@@ -31,20 +31,20 @@ class demand_publisher:
         self.rate.sleep()
         
     def stay_turn_left(self):
-        self.msg_pwmcmd.pwm_left = 0.18
-        self.msg_pwmcmd.pwm_right = -0.18
+        self.msg_pwmcmd.pwm_left = 0.19
+        self.msg_pwmcmd.pwm_right = -0.19
         self.pub_pwmcmd.publish(self.msg_pwmcmd)
         self.rate.sleep()
 
     def stay_turn_right(self):
-        self.msg_pwmcmd.pwm_left = -0.18
-        self.msg_pwmcmd.pwm_right = 0.18
+        self.msg_pwmcmd.pwm_left = -0.19
+        self.msg_pwmcmd.pwm_right = 0.19
         self.pub_pwmcmd.publish(self.msg_pwmcmd)
         self.rate.sleep()
     
     def forward_turn_left_fast(self):
         self.msg_pwmcmd.pwm_left = 0.0
-        self.msg_pwmcmd.pwm_right = -0.22
+        self.msg_pwmcmd.pwm_right = -0.2
         self.pub_pwmcmd.publish(self.msg_pwmcmd)
         self.rate.sleep()
         
@@ -76,8 +76,8 @@ class TFDataSubscriber:
         self.orientation = 361
         self.id = -1
         self.rotation_matrix = None
-        self.sub = rospy.Subscriber('/maze_data', Float64MultiArray, self.callback_maze)
-        self.sub = rospy.Subscriber('/apriltag_data', Float64MultiArray, self.callback_apriltag)
+        self.sub = rospy.Subscriber('maze_data', Float64MultiArray, self.callback_maze)
+        self.sub = rospy.Subscriber('apriltag_data', Float64MultiArray, self.callback_apriltag)
 
     def callback_maze(self, msg):
         self.rotation_matrix = msg.data[0]
@@ -117,17 +117,17 @@ def pose_calib(publisher, subscriber, movements, i):
     print(orientation)
     orient_diff = orientation - movements[i][2]
     while not -3 <= orient_diff <= 3 or orient_diff >= 357:
-        if orient_diff < -3 or orient_diff >= 357:
+        if -180 < orient_diff < -3 or 180 <= orient_diff:
             publisher.forward_turn_left_slow()
-            rospy.loginfo(f"Calibrating left.")
-        if 3 < orient_diff <180:
+#            rospy.loginfo(f"Calibrating left.")
+        if 3 < orient_diff <180 or orient_diff <= -180:
             publisher.forward_turn_right_slow()
-            rospy.loginfo(f"Calibrating right.")
-        publisher.stop()
+#            rospy.loginfo(f"Calibrating right.")
+            publisher.stop()
         orientation = subscriber.get_rotation_matrix()
-        print(orientation)
+#        print(orientation)
         orient_diff = orientation - movements[i][2]
-    rospy.loginfo(f"Calibration finished.")
+#    rospy.loginfo(f"Calibration finished.")
 
 
 def findself(subscriber):
@@ -144,26 +144,26 @@ def findself(subscriber):
 
 def init_orientation(movement_list, publisher, subscriber):
     current_orientation = 361
-    while current_orientation ==361:
+    current_orientation = subscriber.get_rotation_matrix()
+    while current_orientation ==361 or current_orientation == None:
         rospy.loginfo("Looking for orientation.")
         current_orientation = subscriber.get_rotation_matrix()
-        rospy.sleep(0.8)
+        rospy.sleep(1)
         print(current_orientation)
     first_orientation = movement_list[0][2]
     angle = current_orientation - first_orientation
-    while np.abs(current_orientation - first_orientation) >= 5:
-        if 0 <= angle <= 180:
+    while np.abs(angle) >= 5:
+        if -180 < angle < -5 or 180 <= angle:
             publisher.stay_turn_left()
-        else:
+        if 5 < angle <180 or angle <= -180:
             publisher.stay_turn_right()
         current_orientation = subscriber.get_rotation_matrix()
-        print(current_orientation)
-        angle = first_orientation - current_orientation
-    publisher.stop()
+ #       print(current_orientation)
+        angle = current_orientation - first_orientation
     print('Initialized.')
 
 
-def motor_motion(walls, movement_list, path, publisher, subscriber):
+def motor_motion(movement_list, path, publisher, subscriber):
     rospy.loginfo(f"Start motion.")
     search_tuple = None
    # num=0
@@ -207,7 +207,7 @@ def motor_motion(walls, movement_list, path, publisher, subscriber):
                     target_x = (path[i][0] + 0.5) * 0.25
                     target_y = (path[i][1] + 0.5) * 0.25
 
-                while np.sqrt((target_x - pos_x) ** 2 + (target_y - pos_y) ** 2) >= 0.045:
+                while np.sqrt((target_x - pos_x) ** 2 + (target_y - pos_y) ** 2) >= 0.02:
                     publisher.forward_slow()
                     rospy.sleep(0.1)
                     publisher.stop()
@@ -220,12 +220,12 @@ def motor_motion(walls, movement_list, path, publisher, subscriber):
                 while np.abs(orient_diff) >= 3:
                     if 3 < orient_diff <= 180 or -360 <= orient_diff < -180:
                         publisher.forward_turn_left_fast()
-                        rospy.loginfo("Turning left.")
+  #                      rospy.loginfo("Turning left.")
                     if -180 <= orient_diff < -3 or 180 < orient_diff <= 360:
                         publisher.forward_turn_right_fast()
                     orientation_1 = subscriber.get_rotation_matrix()
                     orient_diff = movement_list[i][2] - orientation_1
-                    print(orient_diff)
+  #                  print(orient_diff)
                 pose_calib(publisher, subscriber, movement_list, i)
                 pos_x_2, pos_y_2, search_tuple_2 = findself(subscriber)
                 i_2 = path.index(search_tuple_2)
@@ -250,13 +250,13 @@ def main():
     walls, walls_id, grid = maze.maze_wall(tags)
     init_x, init_y, startpoint = findself(tf_subscriber)
     print(startpoint)
-    end = (1, 1)
+    end = (3, 3)
     path = maze.a_star(walls, startpoint, end)
     movements = maze.path_to_movements(path)
     print(movements)#
 #    pose_calib(demand, tf_subscriber)
     init_orientation(movements, demand, tf_subscriber)
-    motor_motion(walls_id, movements, path, demand, tf_subscriber)
+    motor_motion(movements, path, demand, tf_subscriber)
 
 
 if __name__ == "__main__":

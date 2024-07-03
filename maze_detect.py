@@ -28,7 +28,7 @@ class TreeNode:
 
 class Maze_detector:
     def __init__(self):
-        self.tag_id, self.tag_distance, self.tag_degree = 0, 0, 0
+        self.tag_id, self.tag_distance, self.tag_degree = 0,0,0
         self.x, self.y = 100, 100
         self.i, self.j = 100, 100
         self.position = (100, 100)
@@ -56,9 +56,9 @@ class Maze_detector:
         self.i = math.floor(self.x / 0.25)
         self.j = math.floor(self.y / 0.25)
         self.position = (self.i, self.j)
-        if not self.history:
-            self.root = TreeNode(self.position)
-            self.current_node = self.root
+#        if not self.history:
+#            self.root = TreeNode(self.position)
+#            self.current_node = self.root
 
     def get_coordinate(self):
         return self.position
@@ -81,7 +81,7 @@ class Maze_detector:
 #                    print(self.walls)
 
     def get_walls(self):
-        print(self.walls)
+#        print(self.walls)
         return self.walls
 
     def rotate(self):
@@ -99,22 +99,22 @@ class Maze_detector:
         #self.root = TreeNode(current_position)
         #print('root is :',self.root.position)
         #self.current_node = self.root
-        self.stack = [self.root]
+        #self.stack = [self.root]
         N, S, E, W = 0, -180, -90, 90
         rotate = [N, S, E, W]
-        print("self.direction:",self.direction)
+#        print("self.direction:",self.direction)
         if -10 < self.direction < 10:  # 朝北 只检测东西 并归位
-            rotate.remove(N)
+#            rotate.remove(N)
             rotate.remove(S)
         elif -100 < self.direction < -80:  # 朝东
-            rotate.remove(E)
+ #           rotate.remove(E)
             rotate.remove(W)
         elif 80 < self.direction < 100:  # 朝西
             rotate.remove(E)
-            rotate.remove(W)
+  #          rotate.remove(W)
         elif -180 < self.direction < -175 or 175 < self.direction < 180:  # 朝南
             rotate.remove(N)
-            rotate.remove(S)
+   #         rotate.remove(S)
         if j == 0 and S in rotate:
             rotate.remove(S)
         elif j == 3 and N in rotate:
@@ -123,12 +123,11 @@ class Maze_detector:
             rotate.remove(W)
         elif i == 3 and E in rotate:
             rotate.remove(E)
-        print("jetbot will rotate to:", rotate)
-        current_position = self.get_coordinate() 
-
+        #print("jetbot will rotate to:", rotate)
+        current_position = self.get_coordinate()
+        while current_position == None:
+            current_position = self.get_coordinate() 
         if current_position == self.root.position: # 根结点判断
-            self.current_node = self.root
-            self.history.append(self.root.position)
             if -10 < current_direction < 10:  # 当前朝北
                 rotate.append(S)  # 添加南
             elif -100 < current_direction < -80:  # 当前朝东
@@ -137,7 +136,7 @@ class Maze_detector:
                 rotate.append(E)  # 添加东
             elif -180 < current_direction < -175 or 175 < current_direction < 180:  # 当前朝南
                 rotate.append(N)  # 添加北
-            print("root node will rotate to:",rotate)
+            #print("root node will rotate to:",rotate)
         for direction in rotate:
             print('to rotate direction',direction)
             self.rotate_to(direction)
@@ -148,6 +147,7 @@ class Maze_detector:
        # print("already back to original direction")
 
     def generate_new_position(self):
+ #       print("generating")
         publisher = pth.demand_publisher()
         position = self.get_coordinate()
         while position[0] == 100 or position[1] == 100:
@@ -155,8 +155,9 @@ class Maze_detector:
             position = self.get_coordinate()
         i, j = position[0], position[1]
         new_position = []
-        self.apriltag_list.append(self.tag_id)
-        if np.abs(self.tag_distance) > 0.25 and np.abs(self.tag_degree) < 15:
+        self.apriltag_list.append(self.tag_id)            
+  #      print(self.tag_id,self.tag_distance)
+        if np.abs(self.tag_distance) > 0.25 and np.abs(self.tag_degree) < 25:
             #publisher.stop()
             print("detected apriltag:",self.tag_id,"distance:",self.tag_distance,\
                   "relative angle:",self.tag_degree)
@@ -169,30 +170,36 @@ class Maze_detector:
                 new_position.append((i - 1, j))
             elif -180 < self.direction < -145 or 145 < self.direction < 180:
                 new_position.append((i, j - 1))
-            print('new position:',new_position)
+#            print('new position:',new_position)
             for pos in new_position:
-                if not self.root.find_in_tree(pos) :
+                if pos not in self.history:
                     new_node = self.current_node.add_child(pos)
                     print("new added position:",new_node.position)
-                    self.stack.append(new_node)
-                    self.current_node = new_node
 
-
-    def move_to_new_postion(self):
-        if self.stack:
-            next_node = self.stack.pop()
-            next_position = next_node.position
-            print("current_target:",next_position)
-            self.move(next_position)
-            if self.current_node.position not in self.history:
-                self.history.append(self.current_node.position)
-                print("historical_position:", self.history)
-            self.current_node = next_node
-
-            # next_node = self.stack.pop()  # 弹出栈顶元素
-            # self.move(self.current_node.position, next_node.position)
-            # self.current_node = next_node  # 更新当前节点
-            # self.history.append(self.current_node.position)
+    def move_to_new_position(self):
+        self.current_node = self.stack[-1]
+        self.rotate()
+        print(self.stack)
+#        self.history.append(self.root.position)
+        while self.stack:
+            all_children_visited = True
+            for child in self.current_node.children:
+                if child.position not in self.history:
+                    self.history.append(child.position)
+                    self.stack.append(child)
+                    print("move to", child.position)
+                    self.move(child.position)
+                    print("current position:",child.position)
+                    self.rotate()
+                   # print('historical list:', self.history)
+                    self.current_node = self.stack[-1]
+                    all_children_visited = False
+                    break
+            if all_children_visited:
+                self.stack.pop()
+                print("already pop")
+                if self.stack:
+                    self.current_node = self.stack[-1]
 
     def rotate_to(self, target):
         publisher = pth.demand_publisher()
@@ -214,20 +221,30 @@ class Maze_detector:
         publisher.stop()
     #def add_to_file(self):
 
-
     def run_detect(self, tags):
+        rospy.loginfo("Starting maze detection")
         self.wall_init(tags)
-        if len(self.history) == 16:
-            print('finish')
-        while len(self.history) != 16:
-            self.rotate()
-            self.move_to_new_postion()
+        if not self.history:
+            initial_position = self.get_coordinate()  # 获取当前坐标，假设已在适当位置初始化
+            print("1")
+            self.root = TreeNode(initial_position)
+            self.current_node = self.root
+            self.stack.append(self.root)  # 将根节点加入栈中以开始DFS
+            self.history.append(self.root.position)  # 记录历史位置
+            print("root",self.root)
+        while self.stack:
+            self.move_to_new_position()
+            if len(self.history) >= 16:  # 假设当历史位置数量达到16时完成任务
+                rospy.loginfo("Finished maze detection")
+                break
+        rospy.loginfo("Maze detection process is now complete")
 
     def move(self, target):
         subscriber = pth.TFDataSubscriber()
         publisher = pth.demand_publisher()
         current_position = self.get_coordinate()
         walls_new = self.walls
+        print(walls_new)
         path = mg.a_star(walls_new, current_position, target)
         print(path)
         movements = mg.path_to_movements(path)
@@ -244,3 +261,4 @@ if __name__ == '__main__':
     tags = tags_data['tag_bundles'][0]['layout']
     jetbot.run_detect(tags)
     rospy.spin()
+
