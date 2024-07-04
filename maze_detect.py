@@ -2,7 +2,7 @@ import rospy
 import numpy as np
 import math
 from std_msgs.msg import Float64MultiArray
-import pathtomove as pth
+import pth2 as pth
 import maze_grid as mg
 
 
@@ -85,6 +85,7 @@ class Maze_detector:
         return self.walls
 
     def rotate(self):
+        publisher = pth.demand_publisher()
         current_direction = self.direction
         while current_direction == 361:
             current_direction = self.direction
@@ -140,6 +141,8 @@ class Maze_detector:
         for direction in rotate:
             print('to rotate direction',direction)
             self.rotate_to(direction)
+            publisher.stop()
+            rospy.sleep(2.5)
             self.wall_detection()
             self.generate_new_position()
         #self.rotate_to(current_direction)
@@ -175,6 +178,7 @@ class Maze_detector:
                 if pos not in self.history:
                     new_node = self.current_node.add_child(pos)
                     print("new added position:",new_node.position)
+                    self.stack.append(new_node)
 
     def move_to_new_position(self):
         self.current_node = self.stack[-1]
@@ -183,7 +187,9 @@ class Maze_detector:
 #        self.history.append(self.root.position)
         while self.stack:
             all_children_visited = True
+            
             for child in self.current_node.children:
+                print("current child's position:",child)
                 if child.position not in self.history:
                     self.history.append(child.position)
                     self.stack.append(child)
@@ -193,11 +199,14 @@ class Maze_detector:
                     self.rotate()
                    # print('historical list:', self.history)
                     self.current_node = self.stack[-1]
+                    for children in self.current_node.children:
+                        print("children position of current node:",children.position)
                     all_children_visited = False
                     break
             if all_children_visited:
+                print("already pop:",self.stack[-1])
                 self.stack.pop()
-                print("already pop")
+                
                 if self.stack:
                     self.current_node = self.stack[-1]
 
@@ -207,13 +216,13 @@ class Maze_detector:
         orient_diff = target - current_direction
         while np.abs(orient_diff) >= 5:
             if 5 < orient_diff <= 180 or -360 <= orient_diff < -180:
-                publisher.stay_turn_left()
+                publisher.stay_turn_left_slow()
                 orientation_1 = self.direction
                 #print("Turning left. Current direction:", orientation_1, "Target:", target)
                 orient_diff = target - orientation_1
 #                print(orient_diff)
             if -180 <= orient_diff < -5 or 180 < orient_diff <= 360:
-                publisher.stay_turn_right()
+                publisher.stay_turn_right_slow()
                 orientation_1 = self.direction
                 #print("Turning left. Current direction:", orientation_1, "Target:", target)
                 orient_diff = target - orientation_1
@@ -226,7 +235,7 @@ class Maze_detector:
         self.wall_init(tags)
         if not self.history:
             initial_position = self.get_coordinate()  # 获取当前坐标，假设已在适当位置初始化
-            print("1")
+            #print("1")
             self.root = TreeNode(initial_position)
             self.current_node = self.root
             self.stack.append(self.root)  # 将根节点加入栈中以开始DFS
@@ -244,13 +253,13 @@ class Maze_detector:
         publisher = pth.demand_publisher()
         current_position = self.get_coordinate()
         walls_new = self.walls
-        print(walls_new)
+#        print(walls_new)
         path = mg.a_star(walls_new, current_position, target)
         print(path)
         movements = mg.path_to_movements(path)
         print(movements)
         pth.init_orientation(movements, publisher, subscriber)
-        pth.motor_motion(movements, path, publisher, subscriber)
+        pth.motor_motion(walls_new, movements, path, publisher, subscriber)
 
 
 if __name__ == '__main__':
