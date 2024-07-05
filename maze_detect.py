@@ -33,6 +33,7 @@ class Maze_detector:
         self.i, self.j = 100, 100
         self.position = (100, 100)
         self.direction = 361
+        self.imu_degree = 361
         self.root = None
         self.current_node = None
         self.history = []
@@ -42,6 +43,7 @@ class Maze_detector:
         self.apriltag_list = []
         self.sub = rospy.Subscriber('apriltag_data', Float64MultiArray, self.tag_info)
         self.sub = rospy.Subscriber('maze_data', Float64MultiArray, self.maze_info)
+        self.sub = rospy.Subscriber('Imu_data', Float64MultiArray, self.imu_info)
         self.rate = rospy.Rate(5)
 
     def tag_info(self, msg):
@@ -59,6 +61,9 @@ class Maze_detector:
 #        if not self.history:
 #            self.root = TreeNode(self.position)
 #            self.current_node = self.root
+
+    def imu_info(self, msg):
+        self.imu_degree = msg.data[0]
 
     def get_coordinate(self):
         return self.position
@@ -138,13 +143,20 @@ class Maze_detector:
             elif -180 < current_direction < -175 or 175 < current_direction < 180:  # 当前朝南
                 rotate.append(N)  # 添加北
             #print("root node will rotate to:",rotate)
+        old_id = -1
         for direction in rotate:
             print('to rotate direction',direction)
+            id_now = self.tag_id
             self.rotate_to(direction)
             publisher.stop()
-            rospy.sleep(2.5)
+            rospy.sleep(2)
+            while old_id == id_now:
+                print("there should be a new id instead of:", id_now)
+                rospy.sleep(1)
+                id_now = self.tag_id
             self.wall_detection()
             self.generate_new_position()
+            old_id == id_now
         #self.rotate_to(current_direction)
 
        # print("already back to original direction")
@@ -183,52 +195,73 @@ class Maze_detector:
     def move_to_new_position(self):
         self.current_node = self.stack[-1]
         self.rotate()
-        print(self.stack)
-#        self.history.append(self.root.position)
         while self.stack:
             all_children_visited = True
-            
-            for child in self.current_node.children:
-                print("current child's position:",child)
-                if child.position not in self.history:
-                    self.history.append(child.position)
-                    self.stack.append(child)
-                    print("move to", child.position)
-                    self.move(child.position)
-                    print("current position:",child.position)
-                    self.rotate()
-                   # print('historical list:', self.history)
-                    self.current_node = self.stack[-1]
-                    for children in self.current_node.children:
-                        print("children position of current node:",children.position)
-                    all_children_visited = False
-                    break
+            current_position = self.stack[-1].position
+            if current_position not in self.history:
+                self.history.append(current_position)
+                print("move to", current_position)
+                self.move(current_position)
+                self.current_node = self.stack[-1]
+                self.rotate()
+                print('historical list:', self.history)
+                all_children_visited = False
             if all_children_visited:
-                print("already pop:",self.stack[-1])
+                print("already pop:",self.stack[-1].position)
                 self.stack.pop()
-                
                 if self.stack:
                     self.current_node = self.stack[-1]
 
     def rotate_to(self, target):
         publisher = pth.demand_publisher()
         current_direction = self.direction
+        current_imu = self.imu_degree
+        while current_imu == 361 or current_direction == 361 or current_direction == None:
+            print("looking for current orientation")
+            rospy.sleep(0.5)
+            current_direction = self.direction
+            current_imu = self.imu_degree
         orient_diff = target - current_direction
-        while np.abs(orient_diff) >= 5:
-            if 5 < orient_diff <= 180 or -360 <= orient_diff < -180:
+        target_imu = current_imu + orient_diff
+        if target_imu > 180:
+            target_imu = target_imu - 360
+        elif target_imu < -180:
+            target_imu = target_imu + 360
+        imu_diff = target_imu - current_imu
+        while np.abs(imu_diff) >= 8:
+            if 8 < imu_diff <= 180 or imu_diff < -180:
                 publisher.stay_turn_left_slow()
+                orientation_1 = self.direction
+                current_imu = self.imu_degree
+#                print("target:",target_imu, "current:", current_imu)
+                imu_diff = target_imu - current_imu
+#                print(imu_diff)
+            if -180 <= imu_diff < -8 or 180 < imu_diff:
+                publisher.stay_turn_right_slow()
+                current_imu = self.imu_degree
+#                print("target:",target_imu, "current:", current_imu)
+                imu_diff = target_imu - current_imu
+#                print(imu_diff)
+        print("already reached angle range")
+        publisher.stop()
+        current_direction = self.direction
+        orient_diff = target - current_direction
+        while np.abs(orient_diff) >= 4:
+            if 4 < orient_diff <= 180 or -360 <= orient_diff < -180:
+                publisher.stay_turn_left_fast()
+                publisher.stop()
                 orientation_1 = self.direction
                 #print("Turning left. Current direction:", orientation_1, "Target:", target)
                 orient_diff = target - orientation_1
 #                print(orient_diff)
-            if -180 <= orient_diff < -5 or 180 < orient_diff <= 360:
-                publisher.stay_turn_right_slow()
+            if -180 <= orient_diff < -4 or 180 < orient_diff <= 360:
+                publisher.stay_turn_right_fast()
+                publisher.stop()
                 orientation_1 = self.direction
                 #print("Turning left. Current direction:", orientation_1, "Target:", target)
                 orient_diff = target - orientation_1
 #                print(orient_diff)
         publisher.stop()
-    #def add_to_file(self):
 
     def run_detect(self, tags):
         rospy.loginfo("Starting maze detection")

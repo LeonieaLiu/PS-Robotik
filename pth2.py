@@ -86,10 +86,12 @@ class TFDataSubscriber:
         self.position_y = 100
         self.distance = 100
         self.orientation = 361
+        self.imu_degree = 361
         self.id = -1
         self.rotation_matrix = None
         self.sub = rospy.Subscriber('maze_data', Float64MultiArray, self.callback_maze)
         self.sub = rospy.Subscriber('apriltag_data', Float64MultiArray, self.callback_apriltag)
+        self.sub = rospy.Subscriber('Imu_data', Float64MultiArray, self.callback_imu)
 
     def callback_maze(self, msg):
         self.rotation_matrix = msg.data[0]
@@ -104,6 +106,12 @@ class TFDataSubscriber:
         # 转换为整数
         self.id = int(tag_id)
         #rospy.loginfo(f"Received apriltag_data: distance={self.distance}, orientation={self.orientation}, id = {self.id}")
+        
+    def callback_imu(self, msg):
+        self.imu_degree = msg.data[0]
+    
+    def get_imu_degree(self):
+        return self.imu_degree
         
     def get_position_x(self):
         return self.position_x
@@ -157,26 +165,38 @@ def findself(subscriber):
 
 def init_orientation(movement_list, publisher, subscriber):
     current_orientation = 361
-    while current_orientation == 361 or current_orientation == None:
+    current_imu = 361
+    while current_orientation == 361 or current_orientation == None or current_imu == 361:
         rospy.loginfo("Looking for orientation.")
         current_orientation = subscriber.get_rotation_matrix()
+        current_imu = subscriber.get_imu_degree()
         rospy.sleep(1)
 #        print(current_orientation)
     first_orientation = movement_list[0][2]
-    angle = current_orientation - first_orientation
-    while np.abs(angle) >= 3:
-        if -180 < angle < -3 or 180 <= angle:
-            publisher.stay_turn_left_fast()
+    angle = first_orientation - current_orientation
+    target_imu = current_imu + angle
+    if target_imu > 180:
+        target_imu = target_imu - 360
+    elif target_imu < -180:
+        target_imu = target_imu + 360
+
+    imu_diff = target_imu - current_imu
+    while np.abs(imu_diff) >= 8:
+        if -180 < imu_diff < -8 or 180 <= imu_diff:
+            publisher.stay_turn_right_slow()
 #            rospy.loginfo(f"turning left.")
+            print("target:", target_imu, "current:", current_imu)
             publisher.stop()
-        if 3 < angle < 180 or angle <= -180:
-            publisher.stay_turn_right_fast()
+        if 8 < imu_diff < 180 or imu_diff <= -180:
+            publisher.stay_turn_left_slow()
 #            rospy.loginfo(f"turning right.")
+            print("target:", target_imu, "current:", current_imu)
             publisher.stop()
-        current_orientation = subscriber.get_rotation_matrix()
+#        current_orientation = subscriber.get_rotation_matrix()
+        current_imu = subscriber.get_imu_degree()
+        imu_diff = target_imu - current_imu
 #       print(current_orientation)
-        angle = current_orientation - first_orientation
-#    print('Initialized.')
+    print('Initialized.')
 
 
 def centralization(orientation, x, y):
@@ -290,15 +310,26 @@ def motor_motion(wall_list, movement_list, path, publisher, subscriber):
                 old_i = i    
 #               print("old_i=", old_i)
 
-                orient_diff = movement_list[i][2]-orientation_1
-                while np.abs(orient_diff) >= 3:
-                    if 3 < orient_diff <= 180 or -360 <= orient_diff < -180:
-                        publisher.stay_turn_left()
+                orient_diff = movement_list[i][2]-orientation_2
+                current_imu = subscriber.get_imu_degree()
+                target_imu = current_imu + orient_diff
+                imu_diff = target_imu - current_imu
+                if target_imu > 180:
+                    target_imu = target_imu - 360
+                elif target_imu < -180:
+                    target_imu = target_imu + 360
+
+                while np.abs(imu_diff) >= 8:
+                    if 8 < imu_diff <= 180 or imu_diff < -180:
+                        publisher.stay_turn_left_slow()
 #                      rospy.loginfo("Turning left.")
-                    if -180 <= orient_diff < -3 or 180 < orient_diff <= 360:
-                        publisher.stay_turn_right()
-                    orientation_1 = subscriber.get_rotation_matrix()
-                    orient_diff = movement_list[i][2] - orientation_1
+                    if -180 <= imu_diff < -8 or 180 < imu_diff:
+                        publisher.stay_turn_right_slow()
+#                    orientation_2 = subscriber.get_rotation_matrix()
+                    current_imu = subscriber.get_imu_degree()
+                    imu_diff = target_imu - current_imu
+                    print("target:", target_imu, "current:", current_imu)
+#                    orient_diff = movement_list[i][2] - orientation_2
 #                  print(orient_diff)
                 pose_calib(publisher, subscriber, movement_list, i)
                 pos_x_2, pos_y_2, search_tuple_2 = findself(subscriber)
