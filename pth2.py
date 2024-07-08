@@ -25,56 +25,56 @@ class demand_publisher:
         self.rate.sleep()
         
     def forward_slow(self):
-        self.msg_pwmcmd.pwm_left = -0.18
-        self.msg_pwmcmd.pwm_right = -0.18
+        self.msg_pwmcmd.pwm_left = -0.19
+        self.msg_pwmcmd.pwm_right = -0.19
         self.pub_pwmcmd.publish(self.msg_pwmcmd)
         self.rate.sleep()
         
     def stay_turn_left_slow(self):
-        self.msg_pwmcmd.pwm_left = 0.18
-        self.msg_pwmcmd.pwm_right = -0.18
+        self.msg_pwmcmd.pwm_left = 0.2
+        self.msg_pwmcmd.pwm_right = -0.2
         self.pub_pwmcmd.publish(self.msg_pwmcmd)
         self.rate.sleep()
 
     def stay_turn_right_slow(self):
-        self.msg_pwmcmd.pwm_left = -0.18
-        self.msg_pwmcmd.pwm_right = 0.18
+        self.msg_pwmcmd.pwm_left = -0.2
+        self.msg_pwmcmd.pwm_right = 0.2
         self.pub_pwmcmd.publish(self.msg_pwmcmd)
         self.rate.sleep()
         
     def stay_turn_left_fast(self):
-        self.msg_pwmcmd.pwm_left = 0.21
-        self.msg_pwmcmd.pwm_right = -0.21
+        self.msg_pwmcmd.pwm_left = 0.22
+        self.msg_pwmcmd.pwm_right = -0.22
         self.pub_pwmcmd.publish(self.msg_pwmcmd)
         self.rate.sleep()
 
     def stay_turn_right_fast(self):
-        self.msg_pwmcmd.pwm_left = -0.21
-        self.msg_pwmcmd.pwm_right = 0.21
+        self.msg_pwmcmd.pwm_left = -0.22
+        self.msg_pwmcmd.pwm_right = 0.22
         self.pub_pwmcmd.publish(self.msg_pwmcmd)
         self.rate.sleep()
     
     def forward_turn_left_fast(self):
         self.msg_pwmcmd.pwm_left = 0.0
-        self.msg_pwmcmd.pwm_right = -0.22
+        self.msg_pwmcmd.pwm_right = -0.25
         self.pub_pwmcmd.publish(self.msg_pwmcmd)
         self.rate.sleep()
         
     def forward_turn_right_fast(self):
-        self.msg_pwmcmd.pwm_left = -0.22
+        self.msg_pwmcmd.pwm_left = -0.25
         self.msg_pwmcmd.pwm_right = 0.0
         self.pub_pwmcmd.publish(self.msg_pwmcmd)
         self.rate.sleep()
         
     def forward_turn_left_slow(self):
         self.msg_pwmcmd.pwm_left = 0.0
-        self.msg_pwmcmd.pwm_right = -0.19
+        self.msg_pwmcmd.pwm_right = -0.21
 
         self.pub_pwmcmd.publish(self.msg_pwmcmd)
         self.rate.sleep()
         
     def forward_turn_right_slow(self):
-        self.msg_pwmcmd.pwm_left = -0.19
+        self.msg_pwmcmd.pwm_left = -0.21
         self.msg_pwmcmd.pwm_right = 0.0
         self.pub_pwmcmd.publish(self.msg_pwmcmd)
         self.rate.sleep()
@@ -185,18 +185,39 @@ def init_orientation(movement_list, publisher, subscriber):
         if -180 < imu_diff < -8 or 180 <= imu_diff:
             publisher.stay_turn_right_slow()
 #            rospy.loginfo(f"turning left.")
-            print("target:", target_imu, "current:", current_imu)
-            publisher.stop()
+#            print("target:", target_imu, "current:", current_imu)
+#            publisher.stop()
         if 8 < imu_diff < 180 or imu_diff <= -180:
             publisher.stay_turn_left_slow()
 #            rospy.loginfo(f"turning right.")
-            print("target:", target_imu, "current:", current_imu)
-            publisher.stop()
+#            print("target:", target_imu, "current:", current_imu)
+#            publisher.stop()
 #        current_orientation = subscriber.get_rotation_matrix()
         current_imu = subscriber.get_imu_degree()
         imu_diff = target_imu - current_imu
 #       print(current_orientation)
+    print("already reached angle range")
+    publisher.stop()
+    current_orientation = subscriber.get_rotation_matrix()
+    orient_diff = first_orientation - current_orientation
+    while np.abs(orient_diff) >= 4:
+        if 4 < orient_diff <= 180 or -360 <= orient_diff < -180:
+            publisher.stay_turn_left_fast()
+            publisher.stop()
+            orientation_1 = subscriber.get_rotation_matrix()
+#            print("Turning left. Current direction:", orientation_1, "Target:", target)
+            orient_diff = first_orientation - orientation_1
+#            print(orient_diff)
+        if -180 <= orient_diff < -4 or 180 < orient_diff <= 360:
+            publisher.stay_turn_right_fast()
+            publisher.stop()
+            orientation_1 = subscriber.get_rotation_matrix()
+#            print("Turning left. Current direction:", orientation_1, "Target:", target)
+            orient_diff = first_orientation - orientation_1
+#            print(orient_diff)
+    publisher.stop()
     print('Initialized.')
+    
 
 
 def centralization(orientation, x, y):
@@ -219,9 +240,10 @@ def centralization(orientation, x, y):
     return center_x, center_y
 
 
-def distance_mono_edge(wall_list, apriltagid, x, y):
+def distance_mono_edge(wall_list, apriltagid, x, y, publisher):
     dis_mono_wall = 1000
-    while dis_mono_wall == 1000:
+    if dis_mono_wall == 1000:
+        print("apriltag_id=", apriltagid)
         for item in wall_list:
             if item[2] == apriltagid:
                 if not isinstance(item[0], int):
@@ -230,6 +252,22 @@ def distance_mono_edge(wall_list, apriltagid, x, y):
                 if not isinstance(item[1], int):
                     wall_y = (item[1] + 0.5) * 0.25
                     dis_mono_wall = np.abs(wall_y - y)
+
+    if dis_mono_wall == 1000:
+        if apriltagid % 2 != 0:
+            apriltagid = apriltagid - 1
+            print("new_id=",apriltagid)
+        else: apriltagid += 1
+
+        if item[2] == apriltagid:
+            if not isinstance(item[0], int):
+                wall_x = (item[0] + 0.5) * 0.25
+                dis_mono_wall = np.abs(wall_x - x)
+            if not isinstance(item[1], int):
+                wall_y = (item[1] + 0.5) * 0.25
+                dis_mono_wall = np.abs(wall_y - y)
+        print(dis_mono_wall)
+
     dis_mono_edge = dis_mono_wall - math.floor(dis_mono_wall / 0.25) * 0.25
     return dis_mono_edge
 
@@ -253,13 +291,15 @@ def motor_motion(wall_list, movement_list, path, publisher, subscriber):
         while not i == len(path):
             pos_x, pos_y, search_tuple = findself(subscriber)
             i = path.index(search_tuple)
-            print("i=", i)
+            print("posx=", pos_x, "posy=", pos_y, "i=", i, "length=", len(path))
 
             # Transport to final block
             if i == len(path) - 1:
                 orientation_1 = subscriber.get_rotation_matrix()
                 id_apriltag_1 = subscriber.get_id()
-                mono_edge_dis_1 = distance_mono_edge(wall_list, id_apriltag_1, pos_x, pos_y)
+ #               print("orientation=", orientation_1, "id_apriltag=", id_apriltag_1)
+                mono_edge_dis_1 = distance_mono_edge(wall_list, id_apriltag_1, pos_x, pos_y, publisher)
+#                print(mono_edge_dis_1)
                 centered_x_1, centered_y_1 = centralization(orientation_1, pos_x, pos_y)
                 if old_i == i:
                     target_x = (path[i+1][0] + 0.5) * 0.25
@@ -269,20 +309,31 @@ def motor_motion(wall_list, movement_list, path, publisher, subscriber):
                     target_y = (path[i][1] + 0.5) * 0.25
 
 
-                while not (np.sqrt((target_x - centered_x_1) ** 2 + (target_y - centered_y_1) ** 2) <= 0.025
-                       or mono_edge_dis_1 <= 0.055):
+                while not (np.sqrt((target_x - centered_x_1) ** 2 + (target_y - centered_y_1) ** 2) <= 0.03):
+#                       or mono_edge_dis_1 <= 0.1):
+#               while np.abs(target_x - pos_x) > 0.03 and np.abs(target_y - pos_y) > 0.03:
                     publisher.forward_slow()
-                    pos_x_1, pos_y_1, search_tuple_1 = findself(subscriber)
-                    centered_x_1, centered_y_1 = centralization(orientation_1, pos_x_1, pos_y_1)
-                    mono_edge_dis_1 = distance_mono_edge(wall_list, id_apriltag_1, pos_x_1, pos_y_1)
-                    print("mono_edge_dis_1:", mono_edge_dis_1)
+                    pos_x, pos_y, search_tuple_1 = findself(subscriber)
+                    centered_x_1, centered_y_1 = centralization(orientation_1, pos_x, pos_y)
+                    if np.abs(orientation_1) < 20 or np.abs(orientation_1) > 160:
+                        if np.abs(target_y - centered_y_1) < 0.025:
+                            break
+                    elif 70 < np.abs(orientation_1) < 110:
+                        if np.abs(target_x - centered_x_1) < 0.025:
+                            break
+
+#                    mono_edge_dis_1 = distance_mono_edge(wall_list, id_apriltag_1, pos_x, pos_y, publisher)
+#                    print("mono_edge_dis_1:", mono_edge_dis_1)
+#                    while mono_edge_dis_1 == 1000:
+#                        publisher.stop()
+#                        mono_edge_dis_2 = distance_mono_edge(wall_list, id_apriltag_2, pos_x_2, pos_y_2, publisher)
                 publisher.stop()
                 rospy.loginfo("Goal reached.")
                 break
 
             # Forward
             if i < 1 or movement_list[i][2] - movement_list[i-1][2] == 0 and i != len(path) - 1:
-                publisher.forward()
+                publisher.forward_slow()
                 rospy.sleep(0.1)
                 pose_calib(publisher, subscriber, movement_list, i)
 
@@ -290,7 +341,7 @@ def motor_motion(wall_list, movement_list, path, publisher, subscriber):
             if movement_list[i][2] - movement_list[i-1][2] != 0 and i >= 1 and i != len(path) - 1:
                 orientation_2 = subscriber.get_rotation_matrix()
                 id_apriltag_2 = subscriber.get_id()
-                mono_edge_dis_2 = distance_mono_edge(wall_list, id_apriltag_2, pos_x, pos_y)
+                mono_edge_dis_2 = distance_mono_edge(wall_list, id_apriltag_2, pos_x, pos_y, publisher)
                 centered_x_2, centered_y_2 = centralization(orientation_2, pos_x, pos_y)
                 if old_i == i:
                     target_x = (path[i+1][0] + 0.5) * 0.25
@@ -299,13 +350,24 @@ def motor_motion(wall_list, movement_list, path, publisher, subscriber):
                     target_x = (path[i][0] + 0.5) * 0.25
                     target_y = (path[i][1] + 0.5) * 0.25
 
-                while not (np.sqrt((target_x - centered_x_2) ** 2 + (target_y - centered_y_2) ** 2) <= 0.025
-                       or mono_edge_dis_2 <= 0.055):
+                while not (np.sqrt((target_x - centered_x_2) ** 2 + (target_y - centered_y_2) ** 2) <= 0.03):
+#                      or mono_edge_dis_2 <= 0.1):
+#                while np.abs(target_x - centered_x_2) > 0.03 and np.abs(target_y - centered_y) > 0.03: 
                     publisher.forward_slow()
-                    pos_x_2, pos_y_2, search_tuple_1 = findself(subscriber)
-                    centered_x_2, centered_y_2 = centralization(orientation_2, pos_x_2, pos_y_2)
-                    mono_edge_dis_2 = distance_mono_edge(wall_list, id_apriltag_2, pos_x_2, pos_y_2)
-                    print("mono_edge_dis_2:", mono_edge_dis_2)
+                    pos_x, pos_y, search_tuple_1 = findself(subscriber)
+                    centered_x_2, centered_y_2 = centralization(orientation_2, pos_x, pos_y)
+                    if np.abs(orientation_2) < 20 or np.abs(orientation_2) > 160:
+                        if np.abs(target_y - centered_y_2) < 0.025:
+                            break
+                    elif 70 < np.abs(orientation_2) < 110:
+                        if np.abs(target_x - centered_x_2) < 0.025:
+                            break
+
+#                    mono_edge_dis_2 = distance_mono_edge(wall_list, id_apriltag_2, pos_x, pos_y, publisher)
+#                    print("mono_edge_dis_2:", mono_edge_dis_2)
+ #                   while mono_edge_dis_2 == 1000:
+ #                       publisher.stop()
+ #                       mono_edge_dis_2 = distance_mono_edge(wall_list, id_apriltag_2, pos_x_2, pos_y_2, publisher)
                 publisher.stop()
                 old_i = i    
 #               print("old_i=", old_i)

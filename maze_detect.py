@@ -129,7 +129,7 @@ class Maze_detector:
             rotate.remove(W)
         elif i == 3 and E in rotate:
             rotate.remove(E)
-        #print("jetbot will rotate to:", rotate)
+        print("jetbot will rotate to:", rotate)
         current_position = self.get_coordinate()
         while current_position == None:
             current_position = self.get_coordinate() 
@@ -142,19 +142,21 @@ class Maze_detector:
                 rotate.append(E)  # 添加东
             elif -180 < current_direction < -175 or 175 < current_direction < 180:  # 当前朝南
                 rotate.append(N)  # 添加北
-            #print("root node will rotate to:",rotate)
+            print("root node will rotate to:",rotate)
         old_id = -1
         for direction in rotate:
             print('to rotate direction',direction)
             id_now = self.tag_id
             self.rotate_to(direction)
             publisher.stop()
-            rospy.sleep(2)
+            rospy.sleep(1.5)
             while old_id == id_now:
                 print("there should be a new id instead of:", id_now)
-                rospy.sleep(1)
+                rospy.sleep(1.5)
                 id_now = self.tag_id
+                print("now id =", self.tag_id)
             self.wall_detection()
+            print("walls:", self.walls)
             self.generate_new_position()
             old_id == id_now
         #self.rotate_to(current_direction)
@@ -251,16 +253,16 @@ class Maze_detector:
                 publisher.stay_turn_left_fast()
                 publisher.stop()
                 orientation_1 = self.direction
-                #print("Turning left. Current direction:", orientation_1, "Target:", target)
+                print("Turning left. Current direction:", orientation_1, "Target:", target)
                 orient_diff = target - orientation_1
-#                print(orient_diff)
+                print(orient_diff)
             if -180 <= orient_diff < -4 or 180 < orient_diff <= 360:
                 publisher.stay_turn_right_fast()
                 publisher.stop()
                 orientation_1 = self.direction
-                #print("Turning left. Current direction:", orientation_1, "Target:", target)
+                print("Turning left. Current direction:", orientation_1, "Target:", target)
                 orient_diff = target - orientation_1
-#                print(orient_diff)
+                print(orient_diff)
         publisher.stop()
 
     def run_detect(self, tags):
@@ -285,13 +287,17 @@ class Maze_detector:
         subscriber = pth.TFDataSubscriber()
         publisher = pth.demand_publisher()
         current_position = self.get_coordinate()
+        print("current_position:", current_position)
         walls_new = self.walls
 #        print(walls_new)
         path = mg.a_star(walls_new, current_position, target)
         print(path)
         movements = mg.path_to_movements(path)
         print(movements)
+        search_tuple = self.position
+        index = path.index(search_tuple)
         pth.init_orientation(movements, publisher, subscriber)
+        pth.pose_calib(publisher, subscriber, movements, index)
         pth.motor_motion(walls_new, movements, path, publisher, subscriber)
 
 
