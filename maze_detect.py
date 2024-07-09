@@ -38,8 +38,10 @@ class Maze_detector:
         self.current_node = None
         self.history = []
         self.stack = []
-        self.walls = []
-        self.wall_set_id = []
+        self.walls = []         # info about existed walls, location + id
+        self.walls_no_id = []   # info about existed walls, location only
+#        self.wall_set = []      # info about all the walls from yaml file, location only
+        self.wall_set_id = []   # info about all the walls, location + id
         self.apriltag_list = []
         self.sub = rospy.Subscriber('apriltag_data', Float64MultiArray, self.tag_info)
         self.sub = rospy.Subscriber('maze_data', Float64MultiArray, self.maze_info)
@@ -69,24 +71,26 @@ class Maze_detector:
         return self.position
 
     def wall_init(self, tags):
-        wall_set, self.wall_set_id, grid = mg.maze_wall(tags)
+        wall_set, self.wall_set_id, grid = mg.maze_wall(tags)  # contains all the walls from yamlfile
         max_x, max_y = grid.shape
       #  print(self.wall_set_id)
         for item in self.wall_set_id:
             if item[0] == -0.5 or item[1] == -0.5 or item[0] == max_x + 0.5 or item[1] == max_y + 0.5:
                 self.walls.append(item)
+                self.walls_no_id.append((item[0], item[1]))
    #     print(self.walls)
 
     def wall_detection(self):
-        id = int(self.tag_id)
+        int_id = int(self.tag_id)
         for item in self.wall_set_id:
-            if item[2] == id:
-                if not item in self.walls:
+            if item[2] == int_id:
+                if item not in self.walls:
                     self.walls.append(item)
+                    self.walls_no_id.append((item[0], item[1]))
 #                    print(self.walls)
 
     def get_walls(self):
-#        print(self.walls)
+#       print(self.walls)
         return self.walls
 
     def rotate(self):
@@ -110,17 +114,17 @@ class Maze_detector:
         rotate = [N, S, E, W]
 #        print("self.direction:",self.direction)
         if -10 < self.direction < 10:  # 朝北 只检测东西 并归位
-#            rotate.remove(N)
+#           rotate.remove(N)
             rotate.remove(S)
         elif -100 < self.direction < -80:  # 朝东
- #           rotate.remove(E)
+#           rotate.remove(E)
             rotate.remove(W)
         elif 80 < self.direction < 100:  # 朝西
             rotate.remove(E)
-  #          rotate.remove(W)
+#          rotate.remove(W)
         elif -180 < self.direction < -175 or 175 < self.direction < 180:  # 朝南
             rotate.remove(N)
-   #         rotate.remove(S)
+#         rotate.remove(S)
         if j == 0 and S in rotate:
             rotate.remove(S)
         elif j == 3 and N in rotate:
