@@ -272,7 +272,7 @@ def distance_mono_edge(wall_list, apriltagid, x, y, publisher):
     return dis_mono_edge
 
 
-def motor_motion(wall_list, movement_list, path, publisher, subscriber):
+def motor_motion(movement_list, path, publisher, subscriber, true_path):
     rospy.loginfo(f"Start motion.")
     search_tuple = None
 # num=0
@@ -285,7 +285,8 @@ def motor_motion(wall_list, movement_list, path, publisher, subscriber):
             pos_x, pos_y, search_tuple = findself(subscriber)
         rospy.loginfo(f"x:{pos_x} y:{pos_y} Position: {search_tuple}")
         i = path.index(search_tuple)
-        print("i=", i)
+        true_path.append((pos_x, pos_y))
+#        print("i=", i)
 #        print(len(path))
 
         while not i == len(path):
@@ -296,10 +297,7 @@ def motor_motion(wall_list, movement_list, path, publisher, subscriber):
             # Transport to final block
             if i == len(path) - 1:
                 orientation_1 = subscriber.get_rotation_matrix()
-                id_apriltag_1 = subscriber.get_id()
- #               print("orientation=", orientation_1, "id_apriltag=", id_apriltag_1)
-#                mono_edge_dis_1 = distance_mono_edge(wall_list, id_apriltag_1, pos_x, pos_y, publisher)
-#                print(mono_edge_dis_1)
+
                 centered_x_1, centered_y_1 = centralization(orientation_1, pos_x, pos_y)
                 if old_i == i:
                     target_x = (path[i+1][0] + 0.5) * 0.25
@@ -310,10 +308,9 @@ def motor_motion(wall_list, movement_list, path, publisher, subscriber):
 
 
                 while not (np.sqrt((target_x - centered_x_1) ** 2 + (target_y - centered_y_1) ** 2) <= 0.03):
-#                       or mono_edge_dis_1 <= 0.1):
-#               while np.abs(target_x - pos_x) > 0.03 and np.abs(target_y - pos_y) > 0.03:
                     publisher.forward_slow()
                     pos_x, pos_y, search_tuple_1 = findself(subscriber)
+                    true_path.append((pos_x, pos_y))
                     centered_x_1, centered_y_1 = centralization(orientation_1, pos_x, pos_y)
                     if np.abs(orientation_1) < 20 or np.abs(orientation_1) > 160:
                         if np.abs(target_y - centered_y_1) < 0.025:
@@ -322,11 +319,6 @@ def motor_motion(wall_list, movement_list, path, publisher, subscriber):
                         if np.abs(target_x - centered_x_1) < 0.025:
                             break
 
-#                    mono_edge_dis_1 = distance_mono_edge(wall_list, id_apriltag_1, pos_x, pos_y, publisher)
-#                    print("mono_edge_dis_1:", mono_edge_dis_1)
-#                    while mono_edge_dis_1 == 1000:
-#                        publisher.stop()
-#                        mono_edge_dis_2 = distance_mono_edge(wall_list, id_apriltag_2, pos_x_2, pos_y_2, publisher)
                 publisher.stop()
                 rospy.loginfo("Goal reached.")
                 break
@@ -351,10 +343,9 @@ def motor_motion(wall_list, movement_list, path, publisher, subscriber):
                     target_y = (path[i][1] + 0.5) * 0.25
 
                 while not (np.sqrt((target_x - centered_x_2) ** 2 + (target_y - centered_y_2) ** 2) <= 0.03):
-#                      or mono_edge_dis_2 <= 0.1):
-#                while np.abs(target_x - centered_x_2) > 0.03 and np.abs(target_y - centered_y) > 0.03: 
                     publisher.forward_slow()
                     pos_x, pos_y, search_tuple_1 = findself(subscriber)
+                    true_path.append((pos_x, pos_y))
                     centered_x_2, centered_y_2 = centralization(orientation_2, pos_x, pos_y)
                     if np.abs(orientation_2) < 20 or np.abs(orientation_2) > 160:
                         if np.abs(target_y - centered_y_2) < 0.025:
@@ -363,14 +354,8 @@ def motor_motion(wall_list, movement_list, path, publisher, subscriber):
                         if np.abs(target_x - centered_x_2) < 0.025:
                             break
 
-#                    mono_edge_dis_2 = distance_mono_edge(wall_list, id_apriltag_2, pos_x, pos_y, publisher)
-#                    print("mono_edge_dis_2:", mono_edge_dis_2)
- #                   while mono_edge_dis_2 == 1000:
- #                       publisher.stop()
- #                       mono_edge_dis_2 = distance_mono_edge(wall_list, id_apriltag_2, pos_x_2, pos_y_2, publisher)
                 publisher.stop()
                 old_i = i    
-#               print("old_i=", old_i)
 
                 orient_diff = movement_list[i][2]-orientation_2
                 current_imu = subscriber.get_imu_degree()
@@ -390,9 +375,22 @@ def motor_motion(wall_list, movement_list, path, publisher, subscriber):
 #                    orientation_2 = subscriber.get_rotation_matrix()
                     current_imu = subscriber.get_imu_degree()
                     imu_diff = target_imu - current_imu
-                    print("target:", target_imu, "current:", current_imu)
-#                    orient_diff = movement_list[i][2] - orientation_2
-#                  print(orient_diff)
+#                  print("target:", target_imu, "current:", current_imu)
+                orientation_3 = subscriber.get_rotation_matrix()
+                orient_diff = movement_list[i][2] - orientation_3
+                while np.abs(orient_diff) >= 4:
+                    if 4 < orient_diff <= 180 or -360 <= orient_diff < -180:
+                        publisher.stay_turn_left_fast()
+                        publisher.stop()
+                        orientation_4 = subscriber.get_rotation_matrix()
+                        #            print("Turning left. Current direction:", orientation_1, "Target:", target)
+                        orient_diff = movement_list[i][2] - orientation_4
+                    if -180 <= orient_diff < -4 or 180 < orient_diff <= 360:
+                        publisher.stay_turn_right_fast()
+                        publisher.stop()
+                        orientation_4 = subscriber.get_rotation_matrix()
+                        #            print("Turning left. Current direction:", orientation_1, "Target:", target)
+                        orient_diff = movement_list[i][2] - orientation_4
                 pose_calib(publisher, subscriber, movement_list, i)
                 pos_x_2, pos_y_2, search_tuple_2 = findself(subscriber)
                 i_2 = path.index(search_tuple_2)
@@ -400,6 +398,7 @@ def motor_motion(wall_list, movement_list, path, publisher, subscriber):
                 while i_2 == i:
                     publisher.forward()
                     pos_x_2, pos_y_2, search_tuple_2 = findself(subscriber)
+                    true_path.append((pos_x_2, pos_y_2))
                     i_2 = path.index(search_tuple_2)
 
         publisher.stop()

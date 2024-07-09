@@ -2,7 +2,7 @@ import rospy
 import numpy as np
 import math
 from std_msgs.msg import Float64MultiArray
-import pth3 as pth
+import pth2 as pth
 import maze_grid as mg
 import matplotlib.pyplot as plt
 
@@ -297,6 +297,7 @@ class Maze_detector:
                 rospy.loginfo("Finished maze detection")
                 break
         rospy.loginfo("Maze detection process is now complete")
+        print(self.path_final)
         plot_maze(self.walls, self.path_final)
 
     def move(self, target):
