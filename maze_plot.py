@@ -314,7 +314,7 @@ class Maze_detector:
         index = path.index(search_tuple)
         pth.init_orientation(movements, publisher, subscriber)
         pth.pose_calib(publisher, subscriber, movements, index)
-        pth.motor_motion(walls_new, movements, path, publisher, subscriber, self.path_final)
+        pth.motor_motion(movements, path, publisher, subscriber, self.path_final)
 
 
 if __name__ == '__main__':

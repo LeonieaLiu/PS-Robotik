@@ -289,8 +289,7 @@ def motor_motion(movement_list, path, publisher, subscriber, true_path):
             pos_x, pos_y, search_tuple = findself(subscriber)
             i = path.index(search_tuple)
 #            print("posx=", pos_x, "posy=", pos_y, "i=", i, "length=", len(path))
-            centered_x, centered_y = centralization(pos_x, pos_y, i)
-            true_path.append((centered_x, centered_y))
+            true_path.append((pos_x, pos_y))
             # Transport to final block
             if i == len(path) - 1:
                 orientation_1 = subscriber.get_rotation_matrix()
@@ -304,15 +303,18 @@ def motor_motion(movement_list, path, publisher, subscriber, true_path):
 
                 while not (np.sqrt((target_x - centered_x_1) ** 2 + (target_y - centered_y_1) ** 2) <= 0.03):
                     publisher.forward_slow()
-                    pos_x, pos_y, search_tuple_1 = findself(subscriber)
-                    centered_x_1, centered_y_1 = centralization(orientation_1, pos_x, pos_y)
+                    pos_x_1, pos_y_1, search_tuple_1 = findself(subscriber)
+                    index_1 = path.index(search_tuple_1)
+                    rospy.sleep(0.2)
+                    pose_calib(publisher, subscriber, movement_list, index_1)
+                    true_path.append((pos_x_1, pos_y_1))
+                    centered_x_1, centered_y_1 = centralization(orientation_1, pos_x_1, pos_y_1)
                     if np.abs(orientation_1) < 20 or np.abs(orientation_1) > 160:
                         if np.abs(target_y - centered_y_1) < 0.025:
                             break
                     elif 70 < np.abs(orientation_1) < 110:
                         if np.abs(target_x - centered_x_1) < 0.025:
                             break
-                true_path.append((centered_x_1, centered_y_1))
                 publisher.stop()
                 rospy.loginfo("Goal reached.")
                 break
@@ -336,15 +338,18 @@ def motor_motion(movement_list, path, publisher, subscriber, true_path):
 
                 while not (np.sqrt((target_x - centered_x_2) ** 2 + (target_y - centered_y_2) ** 2) <= 0.03):
                     publisher.forward_slow()
-                    pos_x, pos_y, search_tuple_1 = findself(subscriber)
-                    centered_x_2, centered_y_2 = centralization(orientation_2, pos_x, pos_y)
+                    pos_x_2, pos_y_2, search_tuple_2 = findself(subscriber)
+                    centered_x_2, centered_y_2 = centralization(orientation_2, pos_x_2, pos_y_2)
+                    index_2 = path.index(search_tuple_2)
+                    rospy.sleep(0.2)
+                    pose_calib(publisher, subscriber, movement_list, index_2)
+                    true_path.append((pos_x_2, pos_y_2))
                     if np.abs(orientation_2) < 20 or np.abs(orientation_2) > 160:
                         if np.abs(target_y - centered_y_2) < 0.025:
                             break
                     elif 70 < np.abs(orientation_2) < 110:
                         if np.abs(target_x - centered_x_2) < 0.025:
                             break
-                true_path.append((centered_x_2, centered_y_2))
                 publisher.stop()
                 old_i = i
 
@@ -386,10 +391,11 @@ def motor_motion(movement_list, path, publisher, subscriber, true_path):
                 i_2 = path.index(search_tuple_2)
                 while i_2 == i:
                     publisher.forward_slow()
-                    pos_x_2, pos_y_2, search_tuple_2 = findself(subscriber)
-                    i_2 = path.index(search_tuple_2)
-                    # rospy.sleep(0.1)
-                    # pose_calib(publisher, subscriber, movement_list, i_2)
+                    pos_x_3, pos_y_3, search_tuple_3 = findself(subscriber)
+                    index_3 = path.index(search_tuple_3)
+                    rospy.sleep(0.2)
+                    pose_calib(publisher, subscriber, movement_list, index_3)
+                    true_path.append((pos_x_3, pos_y_3))
 
         publisher.stop()
         break
