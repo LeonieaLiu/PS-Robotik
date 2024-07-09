@@ -2,7 +2,7 @@ import rospy
 import numpy as np
 import math
 from std_msgs.msg import Float64MultiArray
-import pth2 as pth
+import pth3 as pth
 import maze_grid as mg
 import matplotlib.pyplot as plt
 
@@ -27,10 +27,10 @@ def plot_maze(walls, path):
 
     index = 0
     while index < len(path) - 1:
-        x_1 = (path[index][0] + 0.5) * 0.25
-        y_1 = (path[index][1] + 0.5) * 0.25
-        x_2 = (path[index + 1][0] + 0.5) * 0.25
-        y_2 = (path[index + 1][1] + 0.5) * 0.25
+        x_1 = path[index][0]
+        y_1 = path[index][1]
+        x_2 = path[index + 1][0]
+        y_2 = path[index + 1][1]
         ax.plot([x_1, x_2], [y_1, y_2], color='red')
         index += 1
     ax.set_xlim(-1, 1)
@@ -273,14 +273,12 @@ class Maze_detector:
                 orientation_1 = self.direction
 #                print("Turning left. Current direction:", orientation_1, "Target:", target)
                 orient_diff = target - orientation_1
-#                print(orient_diff)
             if -180 <= orient_diff < -4 or 180 < orient_diff <= 360:
                 publisher.stay_turn_right_fast()
                 publisher.stop()
                 orientation_1 = self.direction
 #                print("Turning left. Current direction:", orientation_1, "Target:", target)
                 orient_diff = target - orientation_1
-#                print(orient_diff)
         publisher.stop()
 
     def run_detect(self, apriltags):
@@ -293,7 +291,6 @@ class Maze_detector:
             self.stack.append(self.root)  # 将根节点加入栈中以开始DFS
             self.history.append(self.root.position)  # 记录历史位置
             print("root", self.root)
-        self.path_final.append(self.root)
         while self.stack:
             self.move_to_new_position()
             if len(self.history) >= 16:  # 假设当历史位置数量达到16时完成任务
@@ -316,9 +313,8 @@ class Maze_detector:
         search_tuple = self.position
         index = path.index(search_tuple)
         pth.init_orientation(movements, publisher, subscriber)
-        self.path_final.extend(path[1:])
         pth.pose_calib(publisher, subscriber, movements, index)
-        pth.motor_motion(walls_new, movements, path, publisher, subscriber)
+        pth.motor_motion(walls_new, movements, path, publisher, subscriber, self.path_final)
 
 
 if __name__ == '__main__':
