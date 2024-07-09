@@ -291,14 +291,14 @@ def motor_motion(wall_list, movement_list, path, publisher, subscriber):
         while not i == len(path):
             pos_x, pos_y, search_tuple = findself(subscriber)
             i = path.index(search_tuple)
-            print("posx=", pos_x, "posy=", pos_y, "i=", i, "length=", len(path))
+#            print("posx=", pos_x, "posy=", pos_y, "i=", i, "length=", len(path))
 
             # Transport to final block
             if i == len(path) - 1:
                 orientation_1 = subscriber.get_rotation_matrix()
                 id_apriltag_1 = subscriber.get_id()
  #               print("orientation=", orientation_1, "id_apriltag=", id_apriltag_1)
-                mono_edge_dis_1 = distance_mono_edge(wall_list, id_apriltag_1, pos_x, pos_y, publisher)
+#                mono_edge_dis_1 = distance_mono_edge(wall_list, id_apriltag_1, pos_x, pos_y, publisher)
 #                print(mono_edge_dis_1)
                 centered_x_1, centered_y_1 = centralization(orientation_1, pos_x, pos_y)
                 if old_i == i:
@@ -341,7 +341,7 @@ def motor_motion(wall_list, movement_list, path, publisher, subscriber):
             if movement_list[i][2] - movement_list[i-1][2] != 0 and i >= 1 and i != len(path) - 1:
                 orientation_2 = subscriber.get_rotation_matrix()
                 id_apriltag_2 = subscriber.get_id()
-                mono_edge_dis_2 = distance_mono_edge(wall_list, id_apriltag_2, pos_x, pos_y, publisher)
+#                mono_edge_dis_2 = distance_mono_edge(wall_list, id_apriltag_2, pos_x, pos_y, publisher)
                 centered_x_2, centered_y_2 = centralization(orientation_2, pos_x, pos_y)
                 if old_i == i:
                     target_x = (path[i+1][0] + 0.5) * 0.25
