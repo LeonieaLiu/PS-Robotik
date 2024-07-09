@@ -292,7 +292,7 @@ class Maze_detector:
         publisher = pth.demand_publisher()
         current_position = self.get_coordinate()
         print("current_position:", current_position)
-        walls_new = self.walls
+        walls_new = self.walls_no_id
 #        print(walls_new)
         path = mg.a_star(walls_new, current_position, target)
         print(path)
