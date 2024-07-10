@@ -25,8 +25,8 @@ class demand_publisher:
         self.rate.sleep()
         
     def forward_slow(self):
-        self.msg_pwmcmd.pwm_left = -0.19
-        self.msg_pwmcmd.pwm_right = -0.19
+        self.msg_pwmcmd.pwm_left = -0.21
+        self.msg_pwmcmd.pwm_right = -0.21
         self.pub_pwmcmd.publish(self.msg_pwmcmd)
         self.rate.sleep()
         
@@ -204,14 +204,14 @@ def init_orientation(movement_list, publisher, subscriber):
     orient_diff = first_orientation - current_orientation
     while np.abs(orient_diff) >= 4:
         if 4 < orient_diff <= 180 or -360 <= orient_diff < -180:
-            publisher.stay_turn_left_fast()
+            publisher.stay_turn_left_slow()
             publisher.stop()
             orientation_1 = subscriber.get_rotation_matrix()
 #            print("Turning left. Current direction:", orientation_1, "Target:", target)
             orient_diff = first_orientation - orientation_1
 #            print(orient_diff)
         if -180 <= orient_diff < -4 or 180 < orient_diff <= 360:
-            publisher.stay_turn_right_fast()
+            publisher.stay_turn_right_slow()
             publisher.stop()
             orientation_1 = subscriber.get_rotation_matrix()
 #            print("Turning left. Current direction:", orientation_1, "Target:", target)
@@ -376,13 +376,13 @@ def motor_motion(movement_list, path, publisher, subscriber, true_path):
                 orient_diff = movement_list[i][2] - orientation_3
                 while np.abs(orient_diff) >= 3:
                     if 3 < orient_diff <= 180 or -360 <= orient_diff < -180:
-                        publisher.stay_turn_left_fast()
+                        publisher.stay_turn_left_slow()
                         publisher.stop()
                         orientation_4 = subscriber.get_rotation_matrix()
                         #            print("Turning left. Current direction:", orientation_1, "Target:", target)
                         orient_diff = movement_list[i][2] - orientation_4
                     if -180 <= orient_diff < -3 or 180 < orient_diff <= 360:
-                        publisher.stay_turn_right_fast()
+                        publisher.stay_turn_right_slow()
                         publisher.stop()
                         orientation_4 = subscriber.get_rotation_matrix()
                         #            print("Turning left. Current direction:", orientation_1, "Target:", target)
@@ -395,8 +395,8 @@ def motor_motion(movement_list, path, publisher, subscriber, true_path):
                     pos_x_2, pos_y_2, search_tuple_2 = findself(subscriber)
                     true_path.append((pos_x_2, pos_y_2))
                     i_2 = path.index(search_tuple_2)
-                    rospy.sleep(0.4)
-                    pose_calib(publisher, subscriber, movement_list, i_2)
+                  #  rospy.sleep(0.4)
+                  #  pose_calib(publisher, subscriber, movement_list, i_2)
 
         publisher.stop()
         break
@@ -416,7 +416,7 @@ def main():
     end = (2, 3)
     path = maze.a_star(walls, startpoint, end)
     movements = maze.path_to_movements(path)
-    print(movements)#
+    print(movements)
 #    pose_calib(demand, tf_subscriber)
     init_orientation(movements, demand, tf_subscriber)
     motor_motion(walls_id, movements, path, demand, tf_subscriber)

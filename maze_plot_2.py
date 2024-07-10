@@ -2,7 +2,7 @@ import rospy
 import numpy as np
 import math
 from std_msgs.msg import Float64MultiArray
-import pth2 as pth
+import pth3 as pth
 import maze_grid as mg
 import matplotlib.pyplot as plt
 
@@ -263,19 +263,19 @@ class Maze_detector:
 #                print(imu_diff)
         publisher.stop()
         rospy.loginfo("already reached angle range")
-        rospy.sleep(0.4)
+        rospy.sleep(0.2)
         current_direction = self.direction
         orient_diff = target - current_direction
         while np.abs(orient_diff) >= 4:
             if 4 < orient_diff <= 180 or -360 <= orient_diff < -180:
                 publisher.stay_turn_left_slow()
-                publisher.stop()
+#                publisher.stop()
                 orientation_1 = self.direction
 #                print("Turning left. Current direction:", orientation_1, "Target:", target)
                 orient_diff = target - orientation_1
             if -180 <= orient_diff < -4 or 180 < orient_diff <= 360:
                 publisher.stay_turn_right_slow()
-                publisher.stop()
+#                publisher.stop()
                 orientation_1 = self.direction
 #                print("Turning left. Current direction:", orientation_1, "Target:", target)
                 orient_diff = target - orientation_1
@@ -298,7 +298,7 @@ class Maze_detector:
                 rospy.loginfo("Finished maze detection")
                 break
         rospy.loginfo("Maze detection process is now complete")
-        print(self.path_final)
+#        print(self.path_final)
         plot_maze(self.walls, self.path_final)
 
     def move(self, target):
@@ -309,9 +309,9 @@ class Maze_detector:
         walls_new = self.walls_no_id
 #        print(walls_new)
         path = mg.a_star(walls_new, current_position, target)
-#        print(path)
+        print(path)
         movements = mg.path_to_movements(path)
-#        print(movements)
+        print(movements)
         search_tuple = self.position
         index = path.index(search_tuple)
         pth.init_orientation(movements, publisher, subscriber)
