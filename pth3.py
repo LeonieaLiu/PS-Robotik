@@ -198,7 +198,7 @@ def init_orientation(movement_list, publisher, subscriber):
         current_imu = subscriber.get_imu_degree()
         imu_diff = target_imu - current_imu
 #       print(current_orientation)
-    print("already reached angle range")
+    rospy.loginfo("already reached angle range")
     publisher.stop()
     current_orientation = subscriber.get_rotation_matrix()
     orient_diff = first_orientation - current_orientation
@@ -303,7 +303,6 @@ def motor_motion(movement_list, path, publisher, subscriber, true_path):
                     target_x = (path[i][0] + 0.5) * 0.25
                     target_y = (path[i][1] + 0.5) * 0.25
 
-
                 while not (np.sqrt((target_x - centered_x_1) ** 2 + (target_y - centered_y_1) ** 2) <= 0.03):
                     publisher.forward_slow()
                     pos_x, pos_y, search_tuple_1 = findself(subscriber)
@@ -329,8 +328,6 @@ def motor_motion(movement_list, path, publisher, subscriber, true_path):
             # Turning
             if movement_list[i][2] - movement_list[i-1][2] != 0 and i >= 1 and i != len(path) - 1:
                 orientation_2 = subscriber.get_rotation_matrix()
-                id_apriltag_2 = subscriber.get_id()
-#                mono_edge_dis_2 = distance_mono_edge(wall_list, id_apriltag_2, pos_x, pos_y, publisher)
                 centered_x_2, centered_y_2 = centralization(orientation_2, pos_x, pos_y)
                 if old_i == i:
                     target_x = (path[i+1][0] + 0.5) * 0.25
@@ -344,10 +341,10 @@ def motor_motion(movement_list, path, publisher, subscriber, true_path):
                     pos_x, pos_y, search_tuple_1 = findself(subscriber)
                     true_path.append((pos_x, pos_y))
                     centered_x_2, centered_y_2 = centralization(orientation_2, pos_x, pos_y)
-                    if np.abs(orientation_2) < 20 or np.abs(orientation_2) > 160:
+                    if np.abs(orientation_2) < 45 or np.abs(orientation_2) > 135:
                         if np.abs(target_y - centered_y_2) < 0.025:
                             break
-                    elif 70 < np.abs(orientation_2) < 110:
+                    elif 45 <= np.abs(orientation_2) < 135:
                         if np.abs(target_x - centered_x_2) < 0.025:
                             break
 
@@ -373,16 +370,18 @@ def motor_motion(movement_list, path, publisher, subscriber, true_path):
                     current_imu = subscriber.get_imu_degree()
                     imu_diff = target_imu - current_imu
 #                  print("target:", target_imu, "current:", current_imu)
+                rospy.loginfo("already reached angle range")
+                publisher.stop()
                 orientation_3 = subscriber.get_rotation_matrix()
                 orient_diff = movement_list[i][2] - orientation_3
-                while np.abs(orient_diff) >= 4:
-                    if 4 < orient_diff <= 180 or -360 <= orient_diff < -180:
+                while np.abs(orient_diff) >= 3:
+                    if 3 < orient_diff <= 180 or -360 <= orient_diff < -180:
                         publisher.stay_turn_left_fast()
                         publisher.stop()
                         orientation_4 = subscriber.get_rotation_matrix()
                         #            print("Turning left. Current direction:", orientation_1, "Target:", target)
                         orient_diff = movement_list[i][2] - orientation_4
-                    if -180 <= orient_diff < -4 or 180 < orient_diff <= 360:
+                    if -180 <= orient_diff < -3 or 180 < orient_diff <= 360:
                         publisher.stay_turn_right_fast()
                         publisher.stop()
                         orientation_4 = subscriber.get_rotation_matrix()
