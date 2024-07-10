@@ -395,7 +395,7 @@ def motor_motion(movement_list, path, publisher, subscriber, true_path):
                     pos_x_2, pos_y_2, search_tuple_2 = findself(subscriber)
                     true_path.append((pos_x_2, pos_y_2))
                     i_2 = path.index(search_tuple_2)
-                    rospy.sleep(0.2)
+                    rospy.sleep(0.4)
                     pose_calib(publisher, subscriber, movement_list, i_2)
 
         publisher.stop()
